@@ -16,7 +16,6 @@
 #define __TOUCH_H__
 
 #include "cmsis_os2.h"
-#include "platform.h"
 #include "touch_if.h"
 
 struct touch_device {
@@ -29,5 +28,7 @@ struct touch_device {
     void (*irq_enable)(bool);
     int (*read)(struct touch_device *, struct touch_msg *);
 };
+
+int32_t RegisterTouchDevice(struct touch_device *device);
 
 #endif

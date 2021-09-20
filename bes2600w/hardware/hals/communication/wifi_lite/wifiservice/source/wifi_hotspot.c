@@ -90,13 +90,12 @@ WifiErrorCode DisableHotspot(void)
 
 WifiErrorCode SetHotspotConfig(const HotspotConfig *config)
 {
-    WifiErrorCode ret = ERROR_WIFI_INVALID_ARGS;
     if (config == NULL)
         return ERROR_WIFI_INVALID_ARGS;
     HalHmosWifiLock();
     memcpy(&g_HalHmosWifiApConfig, config, sizeof(HotspotConfig));
     HalHmosWifiUnLock();
-    return ret;
+    return WIFI_SUCCESS;
 }
 
 WifiErrorCode GetHotspotConfig(HotspotConfig *result)

@@ -15,7 +15,6 @@
 #ifndef __TOUCH_ZTW523_H__
 #define __TOUCH_ZTW523_H__
 
-#include "platform.h"
 #include "touch.h"
 
 #define TOUCH_POINT_MODE 0
@@ -128,7 +127,5 @@
 #define zinitix_bit_test(val, n) ((val) & (1 << (n)))
 #define zinitix_swap_v(a, b, t) ((t) = (a), (a) = (b), (b) = (t))
 #define zinitix_swap_16(s) (((((s)&0xff) << 8) | (((s) >> 8) & 0xff)))
-
-extern const struct touch_device g_touch_device;
 
 #endif

@@ -62,8 +62,7 @@ board_cflags = [
     "-DDEBUG=1",
     "-DCMSIS_OS_VER=2",
     "-DOS_HWI_MAX_NUM=96",
-    "-D__FPU_PRESENT=1"
-    ]
+]
 
 board_cxx_flags = board_cflags
 board_ld_flags = [

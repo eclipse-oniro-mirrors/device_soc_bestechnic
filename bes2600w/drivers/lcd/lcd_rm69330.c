@@ -50,13 +50,13 @@ static struct DsiCmdDesc g_OnCmd[] = {
 
 static struct DsiCmdDesc g_offCmd[] = {};
 
-struct LcdRM69330 {
+struct LcdDevice {
     struct PanelData panelData;
     struct PanelInfo panelInfo;
     DevHandle mipiHandle;
 };
 
-static struct LcdRM69330 priv = {
+static struct LcdDevice priv = {
     .panelInfo = {
         .width = WIDTH,
         .height = HEIGHT,
