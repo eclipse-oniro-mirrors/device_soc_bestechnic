@@ -15,7 +15,10 @@ declare_args() {
 
 hdf_include_dirs = [
     "//drivers/adapter/khdf/liteos_m/osal/include/",
+    "//drivers/framework/include",
+    "//drivers/framework/include/config",
     "//drivers/framework/include/core",
+    "//drivers/framework/include/platform",
     "//drivers/framework/include/utils",
     "//drivers/framework/core/host/include",
     "//drivers/framework/core/shared/include",

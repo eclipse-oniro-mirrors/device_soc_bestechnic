@@ -36,7 +36,7 @@ enum BufferIndexType {
     BUFFER1,
 };
 
-struct dsi_priv {
+struct MipiDsiDevice {
     struct HAL_IOMUX_PIN_FUNCTION_MAP dsi_rst;
 #ifdef EVB_V2
     struct HAL_IOMUX_PIN_FUNCTION_MAP dsi_vdd;
@@ -50,7 +50,7 @@ struct dsi_priv {
     struct HAL_DSI_CFG_T cfg;
 };
 
-static struct dsi_priv priv = {
+static struct MipiDsiDevice priv = {
     .dsi_rst = {
         HAL_GPIO_PIN_P0_3,
         HAL_IOMUX_FUNC_AS_GPIO,
@@ -151,7 +151,7 @@ static struct dsi_priv priv = {
 };
 
 #define REAL_PIN(n) (n / 10 * 8 + n % 10)
-static uint32_t MipiDsiDevGetResource(struct dsi_priv *priv, const struct DeviceResourceNode *resourceNode)
+static uint32_t MipiDsiDevGetResource(struct MipiDsiDevice *priv, const struct DeviceResourceNode *resourceNode)
 {
     struct DeviceResourceIface *res = DeviceResourceGetIfaceInstance(HDF_CONFIG_SOURCE);
     if (res == NULL || res->GetUint32 == NULL) {

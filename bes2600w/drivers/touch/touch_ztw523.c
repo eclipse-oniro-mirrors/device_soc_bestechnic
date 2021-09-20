@@ -15,10 +15,12 @@
 #include "touch_ztw523.h"
 #include "gpio_if.h"
 #include "i2c_if.h"
-#include "platform.h"
 #include "touch.h"
+#include "platform.h"
+#include "hdf_log.h"
+#include "hdf_device_desc.h"
+#include "device_resource_if.h"
 
-#define USE_HCS
 #define CONFIG_ROTATION
 #define IIC_RETRY_NUM 2
 
@@ -56,13 +58,8 @@ struct ztw_priv {
  * TSP_SCL/SDA - I2C0 = GPIO04/GPIO05
  */
 static struct ztw_priv priv = {
-#ifdef USE_HCS
     .gpio_rst = 0,
     .gpio_int = 1,
-#else
-    .gpio_rst = 10,
-    .gpio_int = 11,
-#endif
     .i2c_id = 0,
     .i2c_addr = 0x20,
 };
@@ -312,10 +309,79 @@ static void ztw_deinit(void)
     I2cClose(priv.i2c);
 }
 
-struct touch_device g_touch_ztw523 = {
-    .name = "ztw523",
-    .init = ztw_init,
-    .deinit = ztw_deinit,
-    .read = ztw_get_point,
-    .irq_enable = ztw_irq_enable,
+static uint32_t TouchDeviceGetResource(struct ztw_priv *priv, const struct DeviceResourceNode *resourceNode)
+{
+    struct DeviceResourceIface *res = DeviceResourceGetIfaceInstance(HDF_CONFIG_SOURCE);
+    if (res == NULL || res->GetUint32 == NULL) {
+        HDF_LOGE("DeviceResourceIface is invalid");
+        return HDF_FAILURE;
+    }
+    if (res->GetUint16(resourceNode, "gpio_rst", &priv->gpio_rst, 0) != HDF_SUCCESS) {
+        HDF_LOGE("%s: failed to get gpio_rst", __func__);
+        return HDF_FAILURE;
+    }
+    if (res->GetUint16(resourceNode, "gpio_int", &priv->gpio_int, 0) != HDF_SUCCESS) {
+        HDF_LOGE("%s: failed to get gpio_int", __func__);
+        return HDF_FAILURE;
+    }
+    if (res->GetUint16(resourceNode, "i2c_id", &priv->i2c_id, 0) != HDF_SUCCESS) {
+        HDF_LOGE("%s: failed to get i2c_id", __func__);
+        return HDF_FAILURE;
+    }
+    if (res->GetUint16(resourceNode, "i2c_addr", &priv->i2c_addr, 0) != HDF_SUCCESS) {
+        HDF_LOGE("%s: failed to get i2c_addr", __func__);
+        return HDF_FAILURE;
+    }
+    HDF_LOGD("%s: gpio_rst=%d, gpio_int=%d, i2c_id=%d, i2c_addr=%d", __func__,
+             priv->gpio_rst, priv->gpio_int, priv->i2c_id, priv->i2c_addr);
+    return HDF_SUCCESS;
+}
+
+static int32_t TouchDriverInit(struct HdfDeviceObject *object)
+{
+    static struct touch_device touch_ztw523 = {
+        .name = "ztw523",
+        .init = ztw_init,
+        .deinit = ztw_deinit,
+        .read = ztw_get_point,
+        .irq_enable = ztw_irq_enable,
+    };
+    if (object == NULL) {
+        HDF_LOGE("%s: object is null", __func__);
+        return HDF_FAILURE;
+    }
+    if (object->property) {
+        if (TouchDeviceGetResource(&priv, object->property) != HDF_SUCCESS) {
+            HDF_LOGE("%s: TouchDeviceGetResource failed", __func__);
+            return HDF_FAILURE;
+        }
+    }
+    if (RegisterTouchDevice(&touch_ztw523) != HDF_SUCCESS) {
+        HDF_LOGE("%s: RegisterTouchDevice failed", __func__);
+        return HDF_FAILURE;
+    }
+    return HDF_SUCCESS;
+}
+
+static int32_t TouchDriverBind(struct HdfDeviceObject *device)
+{
+    (void)device;
+    HDF_LOGD("%s", __func__);
+    return HDF_SUCCESS;
+}
+
+static void TouchDriverRelease(struct HdfDeviceObject *device)
+{
+    (void)device;
+    HDF_LOGD("%s", __func__);
+}
+
+static struct HdfDriverEntry g_touchDriverEntry = {
+    .moduleVersion = 1,
+    .moduleName = "HDF_TOUCH_ZTW523",
+    .Bind = TouchDriverBind,
+    .Init = TouchDriverInit,
+    .Release = TouchDriverRelease,
 };
+
+HDF_INIT(g_touchDriverEntry);

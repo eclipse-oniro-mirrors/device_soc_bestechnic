@@ -36,6 +36,7 @@ static_library("sys_adapter") {
   include_dirs += [
     "//base/hiviewdfx/hiview_lite",
     "//utils/native/lite/include",
+    "//utils/native/lite/memory/include",
     "//base/hiviewdfx/hilog_lite/frameworks/mini",
     "//base/hiviewdfx/hilog_lite/interfaces/native/kits/hilog_lite",
     "//drivers/framework/core/common/include/manager",

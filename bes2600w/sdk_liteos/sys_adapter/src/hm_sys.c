@@ -27,6 +27,7 @@
 #include "hiview_output_log.h"
 #include "hiview_log.h"
 #include "devmgr_service_start.h"
+#include "ohos_mem_pool.h"
 
 void OsShowInfo(void)
 {
@@ -69,11 +70,18 @@ void HAL_NVIC_SystemReset(void)
 {
 }
 
+/**
+ * @brief implement for hilog_lite featured/mini
+ * @notice hilog_lite mini converts '%s' to '%p'
+ */
 boolean HilogProc_Impl(const HiLogContent *hilogContent, uint32 len)
 {
     char tempOutStr[LOG_FMT_MAX_LEN] = {0};
     if (LogContentFmt(tempOutStr, sizeof(tempOutStr), hilogContent) > 0) {
         printf(tempOutStr);
+#ifdef LOG_FLUSH
+        hal_trace_flush_buffer();
+#endif
     }
     return TRUE;
 }
@@ -109,4 +117,17 @@ int OhosSystemAdapterHooks(void)
     init_trace_system();
     DeviceManagerStart();
     return 0;
+}
+
+/**
+ * @brief implement for ohos_mem_pool.h
+ */
+void *OhosMalloc(MemType type, uint32 size)
+{
+    return malloc(size);
+}
+
+void OhosFree(void *ptr)
+{
+    free(ptr);
 }

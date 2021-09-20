@@ -13,26 +13,53 @@
  * limitations under the License.
  */
 #include "touch.h"
-#include "platform.h"
+#include "hdf_platform.h"
+#include "hdf_log.h"
 
-extern struct touch_device g_touch_ztw523;
-static struct touch_device *g_touch_device[] = {&g_touch_ztw523};
+#define TOUCH_MAX 1
+#define TOUCH_MSG_MAX 8
+struct TouchManager {
+    struct touch_device *device[TOUCH_MAX];
+    uint32_t deviceNum;
+};
+static struct TouchManager g_touchManager;
+
+int32_t RegisterTouchDevice(struct touch_device *device)
+{
+    uint32_t deviceNum;
+
+    if (device == NULL) {
+        HDF_LOGE("%s: device is null", __func__);
+        return HDF_ERR_INVALID_PARAM;
+    }
+    deviceNum = g_touchManager.deviceNum;
+    if (deviceNum >= TOUCH_MAX) {
+        HDF_LOGE("%s: deviceNum > TOUCH_MAX", __func__);
+        return HDF_FAILURE;
+    }
+    if (device->init == NULL || device->read == NULL || device->irq_enable == NULL) {
+        HDF_LOGE("%s: device invalid", __func__);
+        return HDF_FAILURE;
+    }
+    g_touchManager.device[deviceNum] = device;
+    g_touchManager.deviceNum++;
+    return HDF_SUCCESS;
+}
 
 static void touch_task(void *arg)
 {
-    DBG_ASSERT(arg != NULL);
     struct touch_device *dev = (struct touch_device *)arg;
     dev->irq_enable(true); // enable irq first
     while (1) {
         if (osSemaphoreAcquire(dev->sem, osWaitForever) != 0) {
             continue;
         }
-        dev->irq_enable(false); // avoid too much irq ??
+        dev->irq_enable(false); // avoid too much irq
         struct touch_msg msg;
         if (dev->read(dev, &msg) == 0) {
             if (msg.event != TOUCH_EVENT_NONE) {
                 if (osMessageQueuePut(dev->mq, &msg, 0, 0) != 0) {
-                    LOG_W("osMessageQueuePut touch_msg failed");
+                    HDF_LOGW("osMessageQueuePut touch_msg failed");
                 }
             }
         }
@@ -44,7 +71,6 @@ int TouchRead(DevHandle handle, struct touch_msg *msg, uint32_t timeout)
 {
     struct touch_device *dev = (struct touch_device *)handle;
     if (!dev || !dev->mq || !msg) {
-        LOG_E("arg error");
         return -1;
     }
     return osMessageQueueGet(dev->mq, msg, NULL, timeout);
@@ -52,29 +78,38 @@ int TouchRead(DevHandle handle, struct touch_msg *msg, uint32_t timeout)
 
 DevHandle TouchOpen(int id)
 {
-    if (id < 0 || id >= P_ARRAY_SIZE(g_touch_device)) {
-        LOG_E("arg error");
+    if (id < 0 || id >= g_touchManager.deviceNum) {
         return NULL;
     }
-    struct touch_device *dev = g_touch_device[id];
-    DBG_ASSERT(dev->init && dev->read && dev->irq_enable);
+    struct touch_device *dev = g_touchManager.device[id];
     if (dev->init(dev) != 0) {
-        LOG_E("touch device init failed");
+        HDF_LOGE("%s: touch device init failed", __func__);
         return NULL;
     }
 
     dev->sem = osSemaphoreNew(1, 0, NULL);
-    DBG_ASSERT(dev->sem != NULL);
-    // Here msg_count = events_count = 4, in case of osMessageQueuePut failed when timeout = 0
-    dev->mq = osMessageQueueNew(4, sizeof(struct touch_msg), NULL);
-    DBG_ASSERT(dev->mq != NULL);
+    if (dev->sem == NULL) {
+        TouchClose(dev);
+        HDF_LOGE("%s: osSemaphoreNew failed", __func__);
+        return NULL;
+    }
+    dev->mq = osMessageQueueNew(TOUCH_MSG_MAX, sizeof(struct touch_msg), NULL);
+    if (dev->mq == NULL) {
+        TouchClose(dev);
+        HDF_LOGE("%s: osSemaphoreNew failed", __func__);
+        return NULL;
+    }
 
     osThreadAttr_t attr = {0};
     attr.stack_size = 2048;
     attr.priority = osPriorityNormal;
     attr.name = dev->name;
     dev->tid = osThreadNew((osThreadFunc_t)touch_task, dev, &attr);
-    DBG_ASSERT(dev->tid != NULL);
+    if (dev->tid == NULL) {
+        TouchClose(dev);
+        HDF_LOGE("%s: osThreadNew failed", __func__);
+        return NULL;
+    }
     return dev;
 }
 

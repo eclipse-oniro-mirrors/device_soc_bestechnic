@@ -12,6 +12,7 @@
 # limitations under the License.
 
 import("//build/lite/config/component/lite_component.gni")
+import("../drivers.gni")
 
 static_library("touch") {
   sources = [
@@ -19,12 +20,9 @@ static_library("touch") {
     "touch_ztw523.c",
   ]
 
-  include_dirs = [
+  include_dirs = hdf_include_dirs
+  include_dirs += [
     "include",
     "//device/bestechnic/" + board_name + "/sdk_liteos/sys_adapter/include",
-    "//drivers/framework/include/platform",
-    "//drivers/framework/include/utils",
-    "//drivers/adapter/uhdf/posix/include",
-    "//kernel/liteos_m/kal/cmsis",
   ]
 }
