@@ -16,7 +16,7 @@
 #include <string.h>
 #include "uart.h"
 #include "hal_iomux.h"
-#include "hal/hal_timer.h"
+#include "hal_timer.h"
 #include "device_resource_if.h"
 #include "hal_trace.h"
 #include "hal_cache.h"
@@ -100,7 +100,7 @@ static void _uart_dma_rx_handler(uint32_t xfer_size, int dma_error, union HAL_UA
 
     len = kfifo_put(&uart_ctx[uartid].fifo, uart_ctx[uartid].buffer, xfer_size);
     if (len < xfer_size) {
-        printf("%s ringbuf is full have %d need %d\r", __FUNCTION__, (int)len, (int)xfer_size);
+        TRACE(0,"%s ringbuf is full have %d need %d\r", __FUNCTION__, (int)len, (int)xfer_size);
         return;
     }
 
@@ -122,7 +122,7 @@ static void _uart1_dma_rx_handler(uint32_t xfer_size, int dma_error, union HAL_U
     len = kfifo_put(&uart_ctx[uartid].fifo, uart_ctx[uartid].buffer, xfer_size);
 
     if (len < xfer_size) {
-        printf("%s ringbuf is full have %d need %d\r", __FUNCTION__, (int)len, (int)xfer_size);
+        TRACE(0,"%s ringbuf is full have %d need %d\r", __FUNCTION__, (int)len, (int)xfer_size);
         return;
     }
 
@@ -144,7 +144,7 @@ static void _uart2_dma_rx_handler(uint32_t xfer_size, int dma_error, union HAL_U
     len = kfifo_put(&uart_ctx[uartid].fifo, uart_ctx[uartid].buffer, xfer_size);
 
     if (len < xfer_size) {
-        printf("%s ringbuf is full have %d need %d\r", __FUNCTION__, (int)len, (int)xfer_size);
+        TRACE(0,"%s ringbuf is full have %d need %d\r", __FUNCTION__, (int)len, (int)xfer_size);
         return;
     }
 
@@ -168,7 +168,7 @@ static void _uart3_dma_rx_handler(uint32_t xfer_size, int dma_error, union HAL_U
     len = kfifo_put(&uart_ctx[uartid].fifo, uart_ctx[uartid].buffer, xfer_size);
 
     if (len < xfer_size) {
-        printf("%s ringbuf is full have %d need %d\r", __FUNCTION__, (int)len, (int)xfer_size);
+        TRACE(0,"%s ringbuf is full have %d need %d\r", __FUNCTION__, (int)len, (int)xfer_size);
         return;
     }
 
@@ -201,12 +201,12 @@ static int32_t hal_uart_send(uint32_t uart_id, const void *data, uint32_t size, 
     unsigned int desc_cnt = 1;
 
     if (NULL == data || 0 == size) {
-        printf("%s %d Invalid input \r\n", __FILE__, __LINE__);
+        TRACE(0,"%s %d Invalid input \r\n", __FILE__, __LINE__);
         return ret;
     }
 
     if (uart_id > 3) {
-        printf("%s %d Invalid input \r\n", __FILE__, __LINE__);
+        TRACE(0,"%s %d Invalid input \r\n", __FILE__, __LINE__);
         return ret;
     }
 
@@ -227,12 +227,12 @@ static int32_t hal_uart_recv(uint8_t uart_id, void *data, uint32_t expect_size,
     uint32_t expect_len = expect_size;
 
     if (NULL == data || expect_size == 0) {
-        printf("%s %d Invalid input \r\n", __FILE__, __LINE__);
+        TRACE(0,"%s %d Invalid input \r\n", __FILE__, __LINE__);
         return ret;
     }
 
     if (uart_id > 3) {
-        printf("%s %d Invalid input \r\n", __FILE__, __LINE__);
+        TRACE(0,"%s %d Invalid input \r\n", __FILE__, __LINE__);
         return ret;
     }
 
@@ -243,7 +243,7 @@ static int32_t hal_uart_recv(uint8_t uart_id, void *data, uint32_t expect_size,
         recved_len += fifo_pop_len;
         expect_len -= fifo_pop_len;
 
-        printf("uart have %ld len data\r\n", fifo_pop_len);
+        // TRACE(0,"uart have %ld len data\r\n", fifo_pop_len);
 
         if (recved_len >= expect_size) {
             break;
@@ -275,7 +275,7 @@ static int32_t hal_uart_recv(uint8_t uart_id, void *data, uint32_t expect_size,
 static void hal_uart_handler_init(struct UartDevice *device)
 {
     uint32_t uart_id = device->uart_id;
-    printf("hal_uart_handler_init %ld\r\n", uart_id);
+    TRACE(0,"hal_uart_handler_init %ld\r\n", uart_id);
 
     if (uart_id == 0) {
         uart_ctx[uart_id].uart_dma_rx_handler = _uart_dma_rx_handler;
@@ -298,7 +298,7 @@ static void hal_uart_handler_init(struct UartDevice *device)
     if (!uart_kfifo_buffer[uart_id]) {
         uart_kfifo_buffer[uart_id] = (char *)malloc(UART_FIFO_MAX_BUFFER);
         if (!uart_kfifo_buffer[uart_id]) {
-            printf("kfifo malloc failed!");
+            TRACE(0,"kfifo malloc failed!");
             return;
         }
         kfifo_init(&uart_ctx[uart_id].fifo, uart_kfifo_buffer[uart_id], UART_FIFO_MAX_BUFFER);
@@ -308,7 +308,7 @@ static void hal_uart_handler_init(struct UartDevice *device)
     osSemaphoreCreate(uart_ctx[uart_id].tx_sem, 0);
 
     if (uart_ctx[uart_id].rxDMA) {
-        printf("uart %ld start dma rx\r\n", uart_id);
+        TRACE(0,"uart %ld start dma rx\r\n", uart_id);
         hal_uart_irq_set_dma_handler(uart_id, uart_ctx[uart_id].uart_dma_rx_handler, uart_ctx[uart_id].uart_dma_tx_handler);
         hal_uart_rx_start(uart_id);
     } else {
@@ -322,7 +322,7 @@ static void uart_start(struct UartDevice *device)
     struct HAL_UART_CFG_T *uart_cfg;
     uart_cfg = &device->config;
     hal_uart_open(uart_id, uart_cfg);
-    printf("%s %ld\r\n", __FUNCTION__, uart_id);
+    TRACE(0,"%s %ld\r\n", __FUNCTION__, uart_id);
     hal_uart_handler_init(device);
 }
 
@@ -369,10 +369,10 @@ struct UartHostMethod g_uartHostMethod = {
 
 static int InitUartDevice(struct UartHost *host)
 {
-    printf("%s: Enter", __func__);
+    TRACE(0,"%s: Enter", __func__);
 
     if (host == NULL) {
-        printf("%s: invalid parameter", __func__);
+        TRACE(0,"%s: invalid parameter", __func__);
         return HDF_ERR_INVALID_PARAM;
     }
 
@@ -398,7 +398,7 @@ static int InitUartDevice(struct UartHost *host)
     uart_ctx[uartDevice->uart_id].rxDMA = resource->rxDMA;
 
     if (!uartDevice->init_flag) {
-        printf("uart %ld device init\r\n", uartDevice->uart_id);
+        TRACE(0,"uart %ld device init\r\n", uartDevice->uart_id);
         hal_set_uart_iomux(uartDevice->uart_id);
         uart_start(uartDevice);
         uartDevice->init_flag = true;
@@ -416,32 +416,32 @@ static uint32_t GetUartDeviceResource(
     dri = DeviceResourceGetIfaceInstance(HDF_CONFIG_SOURCE);
 
     if (dri == NULL || dri->GetUint32 == NULL) {
-        printf("DeviceResourceIface is invalid");
+        TRACE(0,"DeviceResourceIface is invalid");
         return HDF_FAILURE;
     }
 
     if (dri->GetUint32(resourceNode, "num", &resource->num, 0) != HDF_SUCCESS) {
-        printf("uart config read num fail");
+        TRACE(0,"uart config read num fail");
         return HDF_FAILURE;
     }
 
     if (dri->GetUint32(resourceNode, "baudrate", &resource->baudrate, 0) != HDF_SUCCESS) {
-        printf("uart config read baudrate fail");
+        TRACE(0,"uart config read baudrate fail");
         return HDF_FAILURE;
     }
 
     if (dri->GetUint32(resourceNode, "parity", &resource->parity, 0) != HDF_SUCCESS) {
-        printf("uart config read parity fail");
+        TRACE(0,"uart config read parity fail");
         return HDF_FAILURE;
     }
 
     if (dri->GetUint32(resourceNode, "stopBit", &resource->stopBit, 0) != HDF_SUCCESS) {
-        printf("uart config read stopBit fail");
+        TRACE(0,"uart config read stopBit fail");
         return HDF_FAILURE;
     }
 
     if (dri->GetUint32(resourceNode, "data", &resource->wlen, 0) != HDF_SUCCESS) {
-        printf("uart config read data fail");
+        TRACE(0,"uart config read data fail");
         return HDF_FAILURE;
     }
 
@@ -466,13 +466,13 @@ static int32_t AttachUartDevice(struct UartHost *uarthost, struct HdfDeviceObjec
     struct UartDevice *uartDevice = NULL;
 
     if (device->property == NULL) {
-        printf("%s: property is NULL", __func__);
+        TRACE(0,"%s: property is NULL", __func__);
         return HDF_FAILURE;
     }
 
     uartDevice = (struct UartDevice *)malloc(sizeof(struct UartDevice));
     if (uartDevice == NULL) {
-        printf("%s: OsalMemCalloc uartDevice error", __func__);
+        TRACE(0,"%s: OsalMemCalloc uartDevice error", __func__);
         return HDF_ERR_MALLOC_FAIL;
     }
 
@@ -489,15 +489,20 @@ static int32_t AttachUartDevice(struct UartHost *uarthost, struct HdfDeviceObjec
 
 static int32_t UartDriverBind(struct HdfDeviceObject *device)
 {
-    static struct UartHost devService;
+    struct UartHost *devService;
     if (device == NULL) {
-        printf("Sample device object is null!");
+        TRACE(0,"%s: invalid parameter", __func__);
         return -1;
     }
-
-    devService.device = device;
-    device->service = &(devService.service);
-
+    devService = (struct UartHost *)malloc(sizeof(*devService));
+    if (devService == NULL) {
+        TRACE(0,"%s: OsalMemCalloc error", __func__);
+        return -1;
+    }
+    devService->device = device;
+    device->service = &(devService->service);
+    devService->priv = NULL;
+    devService->method = NULL;
     return HDF_SUCCESS;
 }
 
@@ -506,15 +511,15 @@ static void UartDriverRelease(struct HdfDeviceObject *device)
     struct UartHost *host = NULL;
 
     if (device == NULL) {
-        printf("%s: device is NULL", __func__);
+        TRACE(0,"%s: device is NULL", __func__);
         return HDF_ERR_INVALID_OBJECT;
     }
 
-    printf("Enter %s:", __func__);
+    TRACE(0,"Enter %s:", __func__);
 
     host = UartHostFromDevice(device);
     if (host == NULL) {
-        printf("%s: host is NULL", __func__);
+        TRACE(0,"%s: host is NULL", __func__);
         return HDF_FAILURE;
     }
 
@@ -525,7 +530,10 @@ static void UartDriverRelease(struct HdfDeviceObject *device)
     osSemaphoreDelete(uart_ctx[uart_id].rx_sem);
     osSemaphoreDelete(uart_ctx[uart_id].tx_sem);
     free(uartDevice);
-
+    if (host == NULL) {
+        return;
+    }
+    free(host);
     return;
 }
 
@@ -535,21 +543,21 @@ static int32_t UartDriverInit(struct HdfDeviceObject *device)
     struct UartHost *host = NULL;
 
     if (device == NULL) {
-        printf("%s: device is NULL", __func__);
+        TRACE(0,"%s: device is NULL", __func__);
         return HDF_ERR_INVALID_OBJECT;
     }
 
-    printf("Enter %s:", __func__);
+    TRACE(0,"Enter %s:", __func__);
 
     host = UartHostFromDevice(device);
     if (host == NULL) {
-        printf("%s: host is NULL", __func__);
+        TRACE(0,"%s: host is NULL", __func__);
         return HDF_FAILURE;
     }
 
     ret = AttachUartDevice(host, device);
     if (ret != HDF_SUCCESS) {
-        printf("%s: attach error", __func__);
+        TRACE(0,"%s: attach error", __func__);
         return HDF_FAILURE;
     }
 
@@ -561,9 +569,9 @@ static int32_t UartDriverInit(struct HdfDeviceObject *device)
 /* UartHostMethod implementations */
 static int32_t UartHostDevInit(struct UartHost *host)
 {
-    printf("%s: Enter\r\n", __func__);
+    TRACE(0,"%s: Enter\r\n", __func__);
     if (host == NULL) {
-        printf("%s: invalid parameter", __func__);
+        TRACE(0,"%s: invalid parameter", __func__);
         return HDF_ERR_INVALID_PARAM;
     }
     InitUartDevice(host);
@@ -572,10 +580,10 @@ static int32_t UartHostDevInit(struct UartHost *host)
 
 static int32_t UartHostDevDeinit(struct UartHost *host)
 {
-    printf("%s: Enter", __func__);
+    TRACE(0,"%s: Enter", __func__);
 
     if (host == NULL) {
-        printf("%s: invalid parameter", __func__);
+        TRACE(0,"%s: invalid parameter", __func__);
         return HDF_ERR_INVALID_PARAM;
     }
 
@@ -595,13 +603,13 @@ static int32_t UartHostDevWrite(struct UartHost *host, uint8_t *data, uint32_t s
     uint32_t port_id;
 
     if (host == NULL || data == NULL || size == 0) {
-        printf("%s: invalid parameter", __func__);
+        TRACE(0,"%s: invalid parameter", __func__);
         return HDF_ERR_INVALID_PARAM;
     }
 
     device = (struct UartDevice *)host->priv;
     if (device == NULL) {
-        printf("%s: device is NULL", __func__);
+        TRACE(0,"%s: device is NULL", __func__);
         return HDF_ERR_INVALID_PARAM;
     }
 
@@ -626,17 +634,17 @@ static int32_t UartHostDevRead(struct UartHost *host, uint8_t *data, uint32_t si
     uint32_t recv_size = 0;
     int32_t ret;
 
-    printf("%s: Enter\r\n", __func__);
+    //TRACE(0,"%s: Enter\r\n", __func__);
 
     if (host == NULL) {
-        printf("%s: invalid parameter", __func__);
+        TRACE(0,"%s: invalid parameter", __func__);
         return HDF_ERR_INVALID_PARAM;
     }
 
     struct UartDevice *uartDevice;
     uartDevice = (struct UartDevice *)host->priv;
     if (uartDevice == NULL) {
-        printf("%s: device is NULL", __func__);
+        TRACE(0,"%s: device is NULL", __func__);
         return HDF_ERR_INVALID_PARAM;
     }
 
@@ -644,7 +652,7 @@ static int32_t UartHostDevRead(struct UartHost *host, uint8_t *data, uint32_t si
     if (uart_ctx[uart_id].rxDMA) {
         ret = hal_uart_recv(uart_id, data, size, &recv_size, 1000);
         if (ret != HDF_SUCCESS) {
-            printf("uart %ld recev error\r\n", uart_id);
+            TRACE(0,"uart %ld recev error\r\n", uart_id);
             return HDF_FAILURE;
         }
         ret = recv_size;
@@ -662,10 +670,10 @@ static int32_t UartHostDevRead(struct UartHost *host, uint8_t *data, uint32_t si
 
 static int32_t UartHostDevSetBaud(struct UartHost *host, uint32_t baudRate)
 {
-    printf("%s: Enter", __func__);
+    TRACE(0,"%s: Enter", __func__);
 
     if (host == NULL) {
-        printf("%s: invalid parameter", __func__);
+        TRACE(0,"%s: invalid parameter", __func__);
         return HDF_ERR_INVALID_PARAM;
     }
 
@@ -685,10 +693,10 @@ static int32_t UartHostDevSetBaud(struct UartHost *host, uint32_t baudRate)
 
 static int32_t UartHostDevGetBaud(struct UartHost *host, uint32_t *baudRate)
 {
-    printf("%s: Enter", __func__);
+    TRACE(0,"%s: Enter", __func__);
 
     if (host == NULL) {
-        printf("%s: invalid parameter", __func__);
+        TRACE(0,"%s: invalid parameter", __func__);
         return HDF_ERR_INVALID_PARAM;
     }
 
@@ -704,10 +712,10 @@ static int32_t UartHostDevGetBaud(struct UartHost *host, uint32_t *baudRate)
 
 static int32_t UartHostDevSetAttribute(struct UartHost *host, struct UartAttribute *attribute)
 {
-    printf("%s: Enter", __func__);
+    TRACE(0,"%s: Enter", __func__);
 
     if (host == NULL) {
-        printf("%s: invalid parameter", __func__);
+        TRACE(0,"%s: invalid parameter", __func__);
         return HDF_ERR_INVALID_PARAM;
     }
 
@@ -764,10 +772,10 @@ static int32_t UartHostDevSetAttribute(struct UartHost *host, struct UartAttribu
 
 static int32_t UartHostDevGetAttribute(struct UartHost *host, struct UartAttribute *attribute)
 {
-    printf("%s: Enter", __func__);
+    TRACE(0,"%s: Enter", __func__);
 
     if (host == NULL) {
-        printf("%s: invalid parameter", __func__);
+        TRACE(0,"%s: invalid parameter", __func__);
         return HDF_ERR_INVALID_PARAM;
     }
 
@@ -826,10 +834,10 @@ static int32_t UartHostDevGetAttribute(struct UartHost *host, struct UartAttribu
 
 static int32_t UartHostDevSetTransMode(struct UartHost *host, enum UartTransMode mode)
 {
-    printf("%s: Enter", __func__);
+    TRACE(0,"%s: Enter", __func__);
 
     if (host == NULL) {
-        printf("%s: invalid parameter", __func__);
+        TRACE(0,"%s: invalid parameter", __func__);
         return HDF_ERR_INVALID_PARAM;
     }
 

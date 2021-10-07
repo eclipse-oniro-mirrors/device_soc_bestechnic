@@ -124,7 +124,12 @@ int InitGpioDevice(struct GpioDevice *device)
 
     gpio_cfg.pin = device->port;
     gpio_cfg.function = HAL_IOMUX_FUNC_AS_GPIO;
-    gpio_cfg.volt = HAL_IOMUX_PIN_VOLTAGE_VIO;
+    if (gpio_cfg.pin == HAL_GPIO_PIN_LED1 || gpio_cfg.pin == HAL_GPIO_PIN_LED2)
+    {
+        gpio_cfg.volt = HAL_IOMUX_PIN_VOLTAGE_VBAT;
+    } else {
+        gpio_cfg.volt = HAL_IOMUX_PIN_VOLTAGE_VIO;
+    }
 
     if ((device->config == OUTPUT_PUSH_PULL) || (device->config == OUTPUT_OPEN_DRAIN_PULL_UP) || (device->config == INPUT_PULL_UP) || (device->config == IRQ_MODE)) {
         gpio_cfg.pull_sel = HAL_IOMUX_PIN_PULLUP_ENABLE;
