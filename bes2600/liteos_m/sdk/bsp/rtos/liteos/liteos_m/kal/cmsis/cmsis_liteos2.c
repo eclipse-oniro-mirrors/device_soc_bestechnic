@@ -1,17 +1,34 @@
 /*
- * Copyright (c) 2021 bestechnic (Shanghai) Technologies CO., LIMITED.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (c) 2013-2019 Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2020-2021 Huawei Device Co., Ltd. All rights reserved.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * 1. Redistributions of source code must retain the above copyright notice, this list of
+ *    conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice, this list
+ *    of conditions and the following disclaimer in the documentation and/or other materials
+ *    provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors may be used
+ *    to endorse or promote products derived from this software without specific prior written
+ *    permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+
 #include "cmsis_os2.h"
 #include "kal.h"
 #include "los_event.h"
@@ -1015,7 +1032,7 @@ osMutexId_t osMutexNew(const osMutexAttr_t *attr)
     }
 }
 
-
+#include "hal_trace.h"
 osStatus_t osMutexAcquire(osMutexId_t mutex_id, uint32_t timeout)
 {
     UINT32 uwRet;
@@ -1036,6 +1053,7 @@ osStatus_t osMutexAcquire(osMutexId_t mutex_id, uint32_t timeout)
     } else if (uwRet == LOS_ERRNO_MUX_INVALID) {
         return osErrorParameter;
     } else {
+        TRACE(0, "LOS_MuxPend fail 0x%x", uwRet);
         return osErrorResource;
     }
 }
@@ -1668,4 +1686,121 @@ const char *osMemoryPoolGetName(osMemoryPoolId_t mp_id)
     LOS_IntRestore(intSave);
 
     return p;
+}
+
+//  ==== Thread Flags Functions ====
+uint32_t osThreadFlagsSet(osThreadId_t thread_id, uint32_t flags)
+{
+    UINT32 ret;
+    LosTaskCB *taskCB = (LosTaskCB *)thread_id;
+    EVENT_CB_S *eventCB = NULL;
+    UINT32 curFlags;
+
+    if (taskCB == NULL) {
+        return (uint32_t)osFlagsErrorParameter;
+    }
+
+    eventCB = &(taskCB->event);
+    curFlags = eventCB->uwEventID | flags;
+
+    ret = LOS_EventWrite(eventCB, (UINT32)flags);
+    if (ret == LOS_ERRNO_EVENT_SETBIT_INVALID) {
+        return (uint32_t)osFlagsErrorParameter;
+    }
+
+    if (ret != LOS_OK) {
+        return (uint32_t)osFlagsErrorResource;
+    }
+
+    if (curFlags & taskCB->eventMask) {
+        return curFlags & (~taskCB->eventMask);
+    }
+
+    return curFlags;
+}
+
+uint32_t osThreadFlagsClear(uint32_t flags)
+{
+    UINT32 ret;
+    UINT32 saveFlags;
+    LosTaskCB *runTask = NULL;
+    EVENT_CB_S *eventCB = NULL;
+
+    if (OS_INT_ACTIVE) {
+        return (uint32_t)osFlagsErrorUnknown;
+    }
+
+    runTask = g_losTask.runTask;
+    eventCB = &(runTask->event);
+    saveFlags = eventCB->uwEventID;
+
+    ret = LOS_EventClear(eventCB, ~(UINT32)flags);
+    if (ret == LOS_OK) {
+        return (uint32_t)saveFlags;
+    }
+
+    return (uint32_t)osFlagsErrorResource;
+}
+
+uint32_t osThreadFlagsGet(void)
+{
+    LosTaskCB *runTask = NULL;
+    EVENT_CB_S *eventCB = NULL;
+
+    if (OS_INT_ACTIVE) {
+        return (uint32_t)osFlagsErrorUnknown;
+    }
+
+    runTask = g_losTask.runTask;
+    eventCB = &(runTask->event);
+
+    return (uint32_t)(eventCB->uwEventID);
+}
+
+uint32_t osThreadFlagsWait(uint32_t flags, uint32_t options, uint32_t timeout)
+{
+    UINT32 ret;
+    UINT32 mode = 0;
+    LosTaskCB *runTask = NULL;
+    EVENT_CB_S *eventCB = NULL;
+
+    if (OS_INT_ACTIVE) {
+        return (uint32_t)osFlagsErrorUnknown;
+    }
+
+    if (options > (osFlagsWaitAny | osFlagsWaitAll | osFlagsNoClear)) {
+        return (uint32_t)osFlagsErrorParameter;
+    }
+
+    if ((options & osFlagsWaitAll) == osFlagsWaitAll) {
+        mode |= LOS_WAITMODE_AND;
+    } else {
+        mode |= LOS_WAITMODE_OR;
+    }
+
+    if ((options & osFlagsNoClear) == osFlagsNoClear) {
+        mode &= ~LOS_WAITMODE_CLR;
+    } else {
+        mode |= LOS_WAITMODE_CLR;
+    }
+
+    runTask = g_losTask.runTask;
+    eventCB = &(runTask->event);
+
+    ret = LOS_EventRead(eventCB, (UINT32)flags, mode, (UINT32)timeout);
+    if (!(ret & LOS_ERRTYPE_ERROR)) {
+        return (uint32_t)eventCB->uwEventID | ret;
+    }
+
+    switch (ret) {
+        case LOS_ERRNO_EVENT_PTR_NULL:
+        case LOS_ERRNO_EVENT_SETBIT_INVALID:
+        case LOS_ERRNO_EVENT_EVENTMASK_INVALID:
+        case LOS_ERRNO_EVENT_FLAGS_INVALID:
+            return (uint32_t)osFlagsErrorParameter;
+        case LOS_ERRNO_EVENT_READ_TIMEOUT:
+            return (uint32_t)osFlagsErrorTimeout;
+        default:
+            return (uint32_t)osFlagsErrorResource;
+    }
 }
