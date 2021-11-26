@@ -1,17 +1,24 @@
 /*
- * Copyright (c) 2021 bestechnic (Shanghai) Technologies CO., LIMITED.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+  LzmaDecode.h
+  LZMA Decoder interface
+
+  LZMA SDK 4.40 Copyright (c) 1999-2006 Igor Pavlov (2006-05-01)
+  http://www.7-zip.org/
+
+  LZMA SDK is licensed under two licenses:
+  1) GNU Lesser General Public License (GNU LGPL)
+  2) Common Public License (CPL)
+  It means that you can select one of these two licenses and
+  follow rules of that license.
+
+  SPECIAL EXCEPTION:
+  Igor Pavlov, as the author of this code, expressly permits you to
+  statically or dynamically link your code (or bind by name) to the
+  interfaces of this file without subjecting your linked code to the
+  terms of the CPL or GNU LGPL. Any modifications or additions
+  to this file, however, are subject to the LGPL or CPL terms.
+*/
+
 #ifndef __LZMADECODE_H
 #define __LZMADECODE_H
 
