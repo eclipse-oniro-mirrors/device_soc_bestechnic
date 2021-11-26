@@ -1,18 +1,17 @@
-/***************************************************************************
+/*
+ * Copyright (c) 2021 bestechnic (Shanghai) Technologies CO., LIMITED.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Copyright 2015-2019 BES.
- * All rights reserved. All unpublished rights reserved.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * No part of this work may be used or reproduced in any form or by any
- * means, or stored in a database or retrieval system, without prior written
- * permission of BES.
- *
- * Use of this work is governed by a license granted by BES.
- * This work contains confidential and proprietary information of
- * BES. which is protected by copyright, trade secret,
- * trademark and other intellectual property rights.
- *
- ****************************************************************************/
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 #ifndef __HAL_TRACE_H__
 #define __HAL_TRACE_H__
 #define __INCLUDE_ASSERT_H
@@ -341,7 +340,7 @@ TRACE_FUNC_DECLARE(int hal_raw_trace_output(const unsigned char *buf, unsigned i
 TRACE_FUNC_DECLARE(int hal_trace_output(const unsigned char *buf, unsigned int buf_len), return 0);
 
 TRC_FMT_CHK(2, 3)
-TRACE_FUNC_DECLARE(int hal_trace_printf(uint32_t attr, const char *fmt, ...), return 0);
+TRACE_FUNC_DECLARE(int hal_trace_printf(int attr, const char *fmt, ...), return 0);
 
 TRACE_FUNC_DECLARE(int hal_trace_dump(const char *fmt, unsigned int size,  unsigned int count, const void *buffer), return 0);
 

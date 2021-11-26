@@ -104,7 +104,7 @@ if (ohos_kernel_type == "liteos_m") {
       }
     }
     print("product_path:", product_path)
-    command = "./tools/build_lib_into_hmos_out.sh ${build_tz} ${build_mini} ${ohos_build_type} ${product_path} ${flash_size}"
+    command = "./tools/build_lib_into_hmos_out.sh ${build_tz} ${build_mini} ${ohos_build_type} ${product_path}"
   }
 
   # config bin from vendor/bestechnic/<product_name>/config.json
@@ -128,7 +128,7 @@ if (ohos_kernel_type == "liteos_m") {
         exec_path = rebase_path(".")
         out_lib_path = "${out_product_path}/libs/"
         bsp_lib_path =
-            "./liteos_m/sdk/bsp/out/${bsp_target_name}/libbsp${bsp_target_name}.a"
+            "./liteos_m/sdk/bsp/out/${bsp_target_name}/lib${bsp_target_name}.a"
         command = "cp -rf ${bsp_lib_path} ${out_lib_path}"
         deps = [ ":build_sdk_into_lib" ]
       }
@@ -145,10 +145,12 @@ if (ohos_kernel_type == "liteos_m") {
           "-Wl,--wrap=free",
           "-Wl,--wrap=realloc",
         ]
+        bsp_path = rebase_path("liteos_m")
 
         ldflags += [
           "-Wl,--gc-sections",
           "-Wl,-Map=bin/$output_name.map",
+          "-T$bsp_path/sdk/bsp/out/${bsp_target_name}/_best2001.lds",
         ]
 
         # force link invisible function ,which ar to lib
@@ -159,12 +161,11 @@ if (ohos_kernel_type == "liteos_m") {
         ldflags += [ "-Wl,--no-whole-archive" ]
 
         libs = [
-          "c",
           "m",
           "stdc++",
         ]
 
-        libs += [ "bsp${bsp_target_name}" ]
+        libs += [ "${bsp_target_name}" ]
 
         deps += [ "//build/lite:ohos" ]
       }
