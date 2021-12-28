@@ -104,7 +104,7 @@ mkdir openharmony_bestechnic
 
 cd openharmony_bestechnic
 
-repo init -u https://gitee.com/openharmony/manifest --no-repo-verify
+repo init -u https://gitee.com/openharmony/manifest -b OpenHarmony-3.1-Beta --no-repo-verify
 
 repo sync -c
 
